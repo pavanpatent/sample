@@ -1,0 +1,72 @@
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.MutablePropertySources;
+import org.springframework.core.env.PropertiesPropertySource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.core.io.support.PropertiesLoaderUtils;
+import org.springframework.http.*;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.context.support.ServletContextResource;
+
+import java.io.IOException;
+import java.net.URI;
+import java.util.Properties;
+
+public class ConfigReader {
+
+    public static void main(String[] args) throws IOException {
+        // Create a new AnnotationConfigApplicationContext
+        ApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+
+        // Retrieve the ConfigurableEnvironment
+        ConfigurableEnvironment environment = ((AnnotationConfigApplicationContext) applicationContext).getEnvironment();
+
+        // Create a MutablePropertySources object
+        MutablePropertySources propertySources = environment.getPropertySources();
+
+        // Specify the URL of the Spring Cloud Config server
+        String configServerUrl = "http://localhost:8888";
+
+        // Specify the name of the application and the profile
+        String applicationName = "your-application-name";
+        String profile = "default";
+
+        // Create the URL for the configuration file
+        String configUrl = configServerUrl + "/" + applicationName + "/" + profile;
+
+        // Create the RestTemplate and set the authentication credentials
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBasicAuth("username", "password");  // Replace with your username and password
+
+        // Create the request entity with authentication headers
+        HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+
+        try {
+            // Send the request to the config server
+            ResponseEntity<String> response = restTemplate.exchange(URI.create(configUrl), HttpMethod.GET, requestEntity, String.class);
+
+            // Parse the response body as properties
+            Properties properties = PropertiesLoaderUtils.loadProperties(new ServletContextResource(response.getBody()));
+
+            // Create a PropertiesPropertySource with the loaded properties
+            PropertiesPropertySource propertySource = new PropertiesPropertySource("configServer", properties);
+
+            // Add the PropertiesPropertySource to the MutablePropertySources
+            propertySources.addFirst(propertySource);
+
+            // Refresh the application context
+            ((AnnotationConfigApplicationContext) applicationContext).refresh();
+
+            // Access the properties from the application context
+            String propertyValue = environment.getProperty("your.property.name");
+            System.out.println("Property value: " + propertyValue);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
