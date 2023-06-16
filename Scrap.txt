@@ -1,0 +1,53 @@
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.Environment;
+import org.springframework.web.context.support.ServletContextResource;
+import org.springframework.cloud.config.client.ConfigServicePropertySourceLocator;
+import org.springframework.http.*;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
+
+@Configuration
+public class AppConfig {
+
+    @Value("${config.server.url}")
+    private String configServerUrl;
+
+    @Value("${config.server.username}")
+    private String username;
+
+    @Value("${config.server.password}")
+    private String password;
+
+    @Value("${config.server.token}")
+    private String token;
+
+    @Bean
+    public Environment environment(ConfigurableEnvironment configurableEnvironment) {
+        // Create the authenticated RestTemplate
+        RestTemplate restTemplate = createAuthenticatedRestTemplate();
+
+        // Create the ConfigServicePropertySourceLocator with the config server URL and RestTemplate
+        ConfigServicePropertySourceLocator locator = new ConfigServicePropertySourceLocator(configServerUrl, restTemplate);
+
+        // Retrieve the environment from the config server
+        Environment environment = locator.locate(configurableEnvironment);
+
+        return environment;
+    }
+
+    private RestTemplate createAuthenticatedRestTemplate() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBasicAuth(username, password);
+        headers.set("Authorization", "Bearer " + token);
+
+        HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+        return new RestTemplateBuilder().build();
+    }
+
+    // Other bean definitions and application configurations...
+}
