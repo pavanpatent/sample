@@ -1,0 +1,46 @@
+import org.springframework.cloud.config.client.ConfigServicePropertySourceLocator;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.http.*;
+import org.springframework.web.client.RestTemplate;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.net.URI;
+import java.util.Map;
+
+public class AuthenticatedConfigServicePropertySourceLocator extends ConfigServicePropertySourceLocator {
+
+    private final String username;
+    private final String password;
+    private final String token;
+
+    public AuthenticatedConfigServicePropertySourceLocator(String username, String password, String token) {
+        this.username = username;
+        this.password = password;
+        this.token = token;
+    }
+
+    @Override
+    public Environment locate(ConfigurableEnvironment environment) {
+        Environment configEnvironment = super.locate(environment);
+        String configServerUrl = configEnvironment.getServer().get("uri");
+        RestTemplate restTemplate = getRestTemplate();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBasicAuth(username, password);
+        headers.set("Authorization", "Bearer " + token);
+
+        HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+        ResponseEntity<Map> responseEntity = restTemplate.exchange(URI.create(configServerUrl), HttpMethod.GET, requestEntity, Map.class);
+        Map<String, Object> responseMap = responseEntity.getBody();
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            // Convert the responseMap into the Environment object
+            Environment environmentProperties = objectMapper.convertValue(responseMap, Environment.class);
+            return environmentProperties;
+        } catch (Exception e) {
+            // Handle JSON parsing exception
+            throw new RuntimeException("Failed to parse environment properties", e);
+        }
+    }
+}
