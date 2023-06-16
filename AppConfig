@@ -1,0 +1,30 @@
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
+import org.springframework.core.env.Environment;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+@Configuration
+public class AppConfig implements WebMvcConfigurer {
+
+    @Value("${spring.cloud.config.uri}")
+    private String configServerUrl;
+
+    @Value("${spring.cloud.config.username}")
+    private String username;
+
+    @Value("${spring.cloud.config.password}")
+    private String password;
+
+    @Value("${spring.cloud.config.token}")
+    private String token;
+
+    @Bean
+    public PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer(Environment environment) {
+        PropertySourcesPlaceholderConfigurer configurer = new PropertySourcesPlaceholderConfigurer();
+        configurer.setEnvironment(environment);
+        configurer.setLocation(new ConfigServerPropertySourceLocator(configServerUrl, username, password, token));
+        return configurer;
+    }
+}
