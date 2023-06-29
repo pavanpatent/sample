@@ -1,0 +1,28 @@
+ try {
+            // Create a JsonReader from the JSON string
+            JsonReader jsonReader = Json.createReader(new StringReader(jsonString));
+
+            // Parse the JSON content into a JsonObject
+            JsonObject jsonObject = jsonReader.readObject();
+
+            // Get the "identifiers" array from the JsonObject
+            JsonArray identifiersArray = jsonObject.getJsonArray("identifiers");
+
+            // Iterate over the elements in the array
+            for (int i = 0; i < identifiersArray.size(); i++) {
+                JsonObject identifierObject = identifiersArray.getJsonObject(i);
+
+                // Check if the IDTYPE is "ID3"
+                if ("ID3".equals(identifierObject.getString("IDTYPE"))) {
+                    // Get the ID value
+                    String id3Value = identifierObject.getString("ID");
+                    System.out.println("ID3 Value: " + id3Value);
+                    break;  // Exit the loop since we found the desired ID3
+                }
+            }
+
+            // Close the JsonReader
+            jsonReader.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
