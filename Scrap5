@@ -1,0 +1,3 @@
+String curlCommand = "curl -X " + method.toString() + " \\\n" +
+        "\"" + url + "\" \\\n" +
+        "-H \"" + headers.toString().replace("\n", "").replace("[", "").replace("]", "") + "\"";
